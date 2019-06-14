@@ -10,29 +10,18 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace CSS_Sprite_Image
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for NewProject.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class NewProject : Window
     {
-        public MainWindow()
+        public NewProject()
         {
             InitializeComponent();
         }
-        private void CreateNewProject_Click(object sender, RoutedEventArgs e)
-        {
-            new NewProject().ShowDialog();
-        }
-
-        private void AddImages_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
     }
 }
