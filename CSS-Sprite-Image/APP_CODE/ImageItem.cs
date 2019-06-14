@@ -13,7 +13,7 @@ namespace CSS_Sprite_Image
         static double MaxCanvasWidth = 1024;
         static double MaxCanvasHeight = 1024;
         static List<double> LineHeights { get; set; } = new List<double>();
-        static List<ImageItem> ImagesList { get; set; } = new List<ImageItem>();
+        internal static List<ImageItem> ImagesList { get; set; } = new List<ImageItem>();
         int Id { get; set; }
         string Path { get; set; }
         internal double Width { get; set; }
@@ -94,5 +94,16 @@ namespace CSS_Sprite_Image
             }
         }
 
+        internal static Point GetCanvasDimensions()
+        {
+            Point result = new Point(0, 0);
+            if (ImagesList.Count > 0)
+            {
+                var x = ImagesList.Max(it => it.Position.X + it.Width);
+                var y = ImagesList.Max(it => it.Position.Y + it.Height);
+                result = new Point(x, y);
+            }
+            return result;
+        }
     }
 }
