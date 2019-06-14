@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Xml;
 
 namespace CSS_Sprite_Image
 {
@@ -14,8 +16,9 @@ namespace CSS_Sprite_Image
         static double MaxCanvasHeight = 1024;
         static List<double> LineHeights { get; set; } = new List<double>();
         internal static List<ImageItem> ImagesList { get; set; } = new List<ImageItem>();
-        int Id { get; set; }
+        string Id { get; set; }
         string Path { get; set; }
+        string ImageName { get; set; }
         internal double Width { get; set; }
         internal double Height { get; set; }
         internal Point Position { get; set; }
@@ -26,9 +29,13 @@ namespace CSS_Sprite_Image
 
         internal ImageItem(string path)
         {
-            Id = ImagesList.Count > 0 ? ImagesList.Max(it => it.Id) + 1 : 1;
-            BitmapFrame bitmapFrame;
+            if (string.IsNullOrEmpty(path))
+                return;
+            //Id = ImagesList.Count > 0 ? ImagesList.Max(it => it.Id) + 1 : 1;
+            Id = Guid.NewGuid().ToString();
+            ImageName = System.IO.Path.GetFileNameWithoutExtension(path);
             Path = path;
+            BitmapFrame bitmapFrame;
             try
             {
                 bitmapFrame = BitmapFrame.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
