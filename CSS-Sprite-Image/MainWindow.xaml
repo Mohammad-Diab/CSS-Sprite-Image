@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        
+        <Button Content="new" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="CreateNewProject_Click"/>
+        <Canvas x:Name="canvas" Margin="10,35,10,10"/>
+        <Button Content="add image" HorizontalAlignment="Left" Margin="90,10,0,0" VerticalAlignment="Top" Width="75" Click="AddImages_Click"/>
     </Grid>
 </Window>

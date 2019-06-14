@@ -24,5 +24,15 @@ namespace CSS_Sprite_Image
         {
             InitializeComponent();
         }
+        private void CreateNewProject_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void AddImages_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
     }
 }
