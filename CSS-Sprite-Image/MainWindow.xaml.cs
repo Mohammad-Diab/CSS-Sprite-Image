@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Forms;
 using System.IO;
 using System.Linq;
+using Ookii.Dialogs.Wpf;
 
 namespace CSS_Sprite_Image
 {
@@ -23,9 +24,12 @@ namespace CSS_Sprite_Image
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        ProjectFile currentProject;
         public MainWindow()
         {
             InitializeComponent();
+            currentProject = new ProjectFile("project1", 1024, 1024, OrganizeMethod.EachImageHeightInRow, Environment.UserName);
         }
 
         #region Events
@@ -36,11 +40,16 @@ namespace CSS_Sprite_Image
 
         private void AddImages_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Multiselect = true;
-            if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            VistaOpenFileDialog vofd = new VistaOpenFileDialog()
             {
-                foreach (string it in ofd.FileNames)
+                Multiselect = true,
+                CheckFileExists = true,
+                Filter = "All image Files (*.jpg, *.jpeg, *.jpe, *.jfif, *.png, *.bmp) | *.jpg; *.jpeg; *.jpe; *.jfif; *.png; *.bmp",
+                Title = "Select Images to add..."
+            };
+            if (vofd.ShowDialog() ==  true)
+            {
+                foreach (string it in vofd.FileNames)
                 {
                     UIElement result = AddImageToCanvas(it);
                     if (result != null)
@@ -65,6 +74,20 @@ namespace CSS_Sprite_Image
             CanvasZoom(Zoom_Enum.ZoomOut);
         }
 
+        private void SaveProject_Click(object sender, RoutedEventArgs e)
+        {
+            VistaFolderBrowserDialog vfbd = new VistaFolderBrowserDialog()
+            {
+                Description = "Select a path to save your project in...",
+                ShowNewFolderButton = true,
+                UseDescriptionForTitle = true
+            };
+            if (vfbd.ShowDialog() == true)
+            {
+                SaveProject(vfbd.SelectedPath);
+            }
+        }
+
         #endregion Events
 
         #region Functions
@@ -72,7 +95,7 @@ namespace CSS_Sprite_Image
         {
             if (File.Exists(path))
             {
-                ImageItem newImage = new ImageItem(path);
+                ImageItem newImage = new ImageItem(currentProject, path);
                 if (newImage.Added)
                 {
                     Image im = new Image()
@@ -91,7 +114,6 @@ namespace CSS_Sprite_Image
                     };
                     Canvas.SetLeft(br, newImage.Position.X);
                     Canvas.SetTop(br, newImage.Position.Y);
-                    ImageItem.GetCanvasDimensions();
                     return br;
                 }
             }
@@ -127,10 +149,32 @@ namespace CSS_Sprite_Image
 
         private Point GetCanvasDimensions()
         {
-            return ImageItem.GetCanvasDimensions();
+            return currentProject.GetCanvasDimensions();
+        }
+
+        private void SaveProject(string selectedPath)
+        {
+            if (!string.IsNullOrEmpty(selectedPath))
+            {
+                DirectoryInfo di = new DirectoryInfo(selectedPath);
+                if (!di.Exists)
+                {
+                    try
+                    {
+                        di.Create();
+                    }
+                    catch (Exception) { }
+                }
+                if (di.Exists)
+                {
+                    currentProject.SaveProject(di);
+                }
+            }
         }
 
 
         #endregion Functions
+
+
     }
 }
