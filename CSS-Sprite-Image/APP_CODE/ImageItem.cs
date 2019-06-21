@@ -189,13 +189,13 @@ namespace CSS_Sprite_Image
     public class ProjectFile
     {
         [XmlElement("!--")]
-        public const string By = "kod by Mohammad (https://www.linkedin.com/in/mohammaddiab0)";
+        public string By = "kod by Mohammad (https://www.linkedin.com/in/mohammaddiab0)";
 
         [XmlElement("fileType")]
-        public const string FileType = "Sprite Image Project File";
+        public string FileType = "Sprite Image Project File";
 
         [XmlElement("version")]
-        public string Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        public string Version { get; set; }
 
         [XmlElement("projectName")]
         public string ProjectName { get; set; }
@@ -214,6 +214,9 @@ namespace CSS_Sprite_Image
         [XmlArrayItem("line")]
         public List<LineHeight> LineHeights { get; set; }
 
+        [XmlElement("organizeMethodName")]
+        public OrganizeMethod OrganizeMethod { get; set; }
+
         private int organizeMethodId;
 
         [XmlElement("organizeMethodId")]
@@ -224,14 +227,8 @@ namespace CSS_Sprite_Image
             {
                 organizeMethodId = value;
                 OrganizeMethod = (OrganizeMethod)organizeMethodId;
-                OrganizeMethodName = OrganizeMethod.ToString();
             }
         }
-
-        //[XmlElement("organizeMethodName")]
-        public string OrganizeMethodName { get; set; }
-
-        public OrganizeMethod OrganizeMethod { get; set; }
 
         [XmlElement("creatorUser")]
         public string CreatorUser { get; set; }
@@ -248,7 +245,7 @@ namespace CSS_Sprite_Image
             LineHeights = new List<LineHeight>();
         }
 
-        public ProjectFile(string name, double maxWidth, double maxHeight, OrganizeMethod organizeMethod, string creator)
+        internal ProjectFile(string name, double maxWidth, double maxHeight, OrganizeMethod organizeMethod, string creator)
         {
             ProjectName = name;
             MaxCanvasWidth = maxWidth;
@@ -260,13 +257,14 @@ namespace CSS_Sprite_Image
             CreatedDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
         }
 
-        public void SaveProject(DirectoryInfo destination)
+        internal void SaveProject(DirectoryInfo destination)
         {
             if (ImagesList?.Count == 0)
             {
                 return;
             }
             LastSaveDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
+            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             if (!destination.Exists)
             {
                 try
@@ -294,7 +292,7 @@ namespace CSS_Sprite_Image
                         {
                             string newpath = Path.Combine(imageDir.FullName, ImagesList[i].Id + Path.GetExtension(ImagesList[i].ImagePath));
                             File.Copy(ImagesList[i].ImagePath, newpath);
-                            ImagesList[i].ImagePath = newpath;
+                            ImagesList[i].ImagePath = newpath.Replace(path, "");
                         }
                         catch (Exception)
                         {
@@ -302,26 +300,28 @@ namespace CSS_Sprite_Image
                         }
                     }
 
+                    //using (StreamWriter imageListFile = new StreamWriter(File.Open(Path.Combine(path, "Images.xml"), FileMode.OpenOrCreate)))
+                    //{
+                    //    string xmlImagesFile = CreateXmlImagesFile();
+                    //    imageListFile.Write(xmlImagesFile);
+                    //    imageListFile.Close();
+                    //}
 
-                    using (StreamWriter imageListFile = new StreamWriter(File.Open(Path.Combine(path, "Images.xml"), FileMode.OpenOrCreate)))
+                    using (Stream stream = File.Open(Path.Combine(path, ProjectName + ".sip"), FileMode.OpenOrCreate))
                     {
-                        string xmlImagesFile = CreateXmlImagesFile();
-                        imageListFile.Write(xmlImagesFile);
-                        imageListFile.Close();
-                    }
-
-                    using (StreamWriter projectFile = new StreamWriter(File.Open(Path.Combine(path, ProjectName + ".sip"), FileMode.OpenOrCreate)))
-                    {
-                        string xmlProjectFile = CreateXmlProjectFile();
-                        projectFile.Write(xmlProjectFile);
-                        projectFile.Close();
+                        var serializer = new XmlSerializer(typeof(ProjectFile));
+                        serializer.Serialize(stream, this);
+                        stream.Close();
+                        //string xmlProjectFile = CreateXmlProjectFile();
+                        //projectFile.Write(xmlProjectFile);
+                        //projectFile.Close();
                     }
                 }
                 catch (Exception) { }
             }
         }
 
-        public string CreateXmlProjectFile()
+        internal string CreateXmlProjectFile()
         {
             XmlDocument document = new XmlDocument();
 
@@ -389,7 +389,7 @@ namespace CSS_Sprite_Image
             return Functions.BeautifyXml(document.OuterXml);
         }
 
-        public string CreateXmlImagesFile()
+        internal string CreateXmlImagesFile()
         {
             XmlDocument document = new XmlDocument();
 
@@ -430,7 +430,7 @@ namespace CSS_Sprite_Image
             return Functions.BeautifyXml(document.OuterXml);
         }
 
-        public static ProjectFile LoadProject(DirectoryInfo source, string projectFilePath)
+        internal static ProjectFile LoadProject(DirectoryInfo source, string projectFilePath)
         {
             ProjectFile result = null;
             if (source is null || !source.Exists)
@@ -451,24 +451,28 @@ namespace CSS_Sprite_Image
                 return result;
             }
 
-            var serializer = new XmlSerializer(typeof(ProjectFile));
             using (Stream stream = projectFile.Open(FileMode.Open, FileAccess.Read))
             {
                 //XmlDocument doc = new XmlDocument();
                 //doc.Load(stream);
                 //XmlReader xmlreader = XmlReader.Create(stream);
+                var serializer = new XmlSerializer(typeof(ProjectFile));
                 result = (ProjectFile)serializer.Deserialize(stream);
                 //xmlreader.Close();
                 stream.Close();
-                foreach (ImageItem it in result.ImagesList)
+                for (int i = 0; i < result.ImagesList.Count; i++)
                 {
-                    it.ImagePath = Path.Combine(source.FullName, it.ImagePath);
+                    if (result.ImagesList[i] != null)
+                    {
+                        result.ImagesList[i].ImagePath = result.ImagesList[i]?.ImagePath?.Trim(Path.DirectorySeparatorChar);
+                        result.ImagesList[i].ImagePath = Path.Combine(source.FullName, result.ImagesList[i].ImagePath);
+                    }
                 }
             }
             return result;
         }
 
-        public Point GetCanvasDimensions()
+        internal Point GetCanvasDimensions()
         {
             Point result = new Point(0, 0);
             if (ImagesList.Count > 0)
