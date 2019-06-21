@@ -7,22 +7,47 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace CSS_Sprite_Image
 {
-    class ImageItem
+    public class ImageItem
     {
-        internal string Id { get; set; }
-        internal string ImagePath { get; set; }
-        internal string ImageName { get; set; }
-        internal double Width { get; set; }
-        internal double Height { get; set; }
-        internal Point Position { get; set; }
-        internal int Row { get; set; }
-        internal int Column { get; set; }
+        [XmlElement("id")]
+        public string Id { get; set; }
+
+        [XmlElement("path")]
+        public string ImagePath { get; set; }
+
+        [XmlElement("name")]
+        public string ImageName { get; set; }
+
+        [XmlElement("width")]
+        public double Width { get; set; }
+
+        [XmlElement("height")]
+        public double Height { get; set; }
+
+        [XmlElement("positionX")]
+        public double PositionX { get; set; }
+
+        [XmlElement("positionY")]
+        public double PositionY { get; set; }
+
+        [XmlElement("row")]
+        public int Row { get; set; }
+
+        [XmlElement("column")]
+        public int Column { get; set; }
+
         internal bool Added { get; set; } = false;
 
         internal ProjectFile project;
+
+        public ImageItem()
+        {
+            Added = true;
+        }
 
         internal ImageItem(ProjectFile project, string path)
         {
@@ -46,7 +71,7 @@ namespace CSS_Sprite_Image
             List<int> lines = new List<int>();
             for (int i = 0; i < project.LineHeights.Count; i++)
             {
-                if (project.LineHeights[i] == Height)
+                if (project.LineHeights[i].Height == Height)
                 {
                     lines.Add(i);
                 }
@@ -55,39 +80,36 @@ namespace CSS_Sprite_Image
             bool found = false;
             foreach (int i in lines)
             {
-                double X = 0, Y = 0;
                 var lineList = project.ImagesList.Where(it => it.Row == i);
-                var maxWidth = lineList.Max(it => (it.Position.X + it.Width));
+                var maxWidth = lineList.Max(it => (it.PositionX + it.Width));
                 if (maxWidth + Width <= project.MaxCanvasWidth)
                 {
                     Row = i;
                     Column = lineList.Count();
                     if (Column > 0)
                     {
-                        Y = lineList.First().Position.Y;
+                        PositionY = lineList.First().PositionY;
                     }
                     else
                     {
-                        Y = project.LineHeights.Take(i).Sum();
+                        PositionY = project.LineHeights.Take(i).Select(it => it.Height).Sum();
                     }
 
-                    X = maxWidth;
-                    Position = new Point(X, Y);
+                    PositionX = maxWidth;
                     found = true;
                     break;
                 }
             }
             if (!found)
             {
-                double maxHieght = project.LineHeights.Sum();
+                double maxHieght = project.LineHeights.Select(it => it.Height).Sum();
                 if (maxHieght + Height <= project.MaxCanvasHeight)
                 {
                     Row = project.LineHeights.Count;
                     Column = 0;
-                    double X = 0, Y = 0;
-                    Y = maxHieght;
-                    Position = new Point(X, Y);
-                    project.LineHeights.Add(Height);
+                    PositionX = 0;
+                    PositionY = maxHieght;
+                    project.LineHeights.Add(new LineHeight(project.LineHeights.Count, Height));
                     found = true;
                 }
             }
@@ -119,10 +141,10 @@ namespace CSS_Sprite_Image
             height.InnerText = Height.ToString();
 
             XmlNode positionX = document.CreateNode(XmlNodeType.Element, "positionX", "");
-            positionX.InnerText = Position.X.ToString();
+            positionX.InnerText = PositionX.ToString();
 
             XmlNode positionY = document.CreateNode(XmlNodeType.Element, "positionY", "");
-            positionY.InnerText = Position.Y.ToString();
+            positionY.InnerText = PositionY.ToString();
 
             XmlNode row = document.CreateNode(XmlNodeType.Element, "row", "");
             row.InnerText = Row.ToString();
@@ -144,39 +166,101 @@ namespace CSS_Sprite_Image
         }
     }
 
-    class ProjectFile
+    public class LineHeight
     {
-        string ProjectName { get; set; }
+        [XmlElement("id")]
+        public int Id { get; set; }
 
-        internal double MaxCanvasWidth { get; set; }
+        [XmlElement("height")]
+        public double Height { get; set; }
 
-        internal double MaxCanvasHeight { get; set; }
+        public LineHeight()
+        {
+        }
 
-        internal List<ImageItem> ImagesList { get; set; }
+        internal LineHeight(int id, double height)
+        {
+            Id = id;
+            Height = height;
+        }
+    }
 
-        internal List<double> LineHeights { get; set; }
+    [XmlRoot("project")]
+    public class ProjectFile
+    {
+        [XmlElement("!--")]
+        public const string By = "kod by Mohammad (https://www.linkedin.com/in/mohammaddiab0)";
 
-        internal OrganizeMethod OrganizeMethod { get; set; }
+        [XmlElement("fileType")]
+        public const string FileType = "Sprite Image Project File";
 
-        string CreatorUser { get; set; }
+        [XmlElement("version")]
+        public string Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        string CreatedDate { get; set; }
+        [XmlElement("projectName")]
+        public string ProjectName { get; set; }
 
-        string LastSaveDate { get; set; }
+        [XmlElement("maxCanvasWidth")]
+        public double MaxCanvasWidth { get; set; }
 
-        internal ProjectFile(string name, double maxWidth, double maxHeight, OrganizeMethod organizeMethod, string creator)
+        [XmlElement("maxCanvasHeight")]
+        public double MaxCanvasHeight { get; set; }
+
+        [XmlArray("images")]
+        [XmlArrayItem("image")]
+        public List<ImageItem> ImagesList { get; set; }
+
+        [XmlArray("lines")]
+        [XmlArrayItem("line")]
+        public List<LineHeight> LineHeights { get; set; }
+
+        private int organizeMethodId;
+
+        [XmlElement("organizeMethodId")]
+        public int OrganizeMethodId
+        {
+            get => organizeMethodId;
+            set
+            {
+                organizeMethodId = value;
+                OrganizeMethod = (OrganizeMethod)organizeMethodId;
+                OrganizeMethodName = OrganizeMethod.ToString();
+            }
+        }
+
+        //[XmlElement("organizeMethodName")]
+        public string OrganizeMethodName { get; set; }
+
+        public OrganizeMethod OrganizeMethod { get; set; }
+
+        [XmlElement("creatorUser")]
+        public string CreatorUser { get; set; }
+
+        [XmlElement("creatorDate")]
+        public string CreatedDate { get; set; }
+
+        [XmlElement("lastSaveDate")]
+        public string LastSaveDate { get; set; }
+
+        public ProjectFile()
+        {
+            ImagesList = new List<ImageItem>();
+            LineHeights = new List<LineHeight>();
+        }
+
+        public ProjectFile(string name, double maxWidth, double maxHeight, OrganizeMethod organizeMethod, string creator)
         {
             ProjectName = name;
             MaxCanvasWidth = maxWidth;
             MaxCanvasHeight = maxHeight;
-            OrganizeMethod = organizeMethod;
+            OrganizeMethodId = (int)organizeMethod;
             ImagesList = new List<ImageItem>();
-            LineHeights = new List<double>();
+            LineHeights = new List<LineHeight>();
             CreatorUser = creator;
             CreatedDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
         }
 
-        internal void SaveProject(DirectoryInfo destination)
+        public void SaveProject(DirectoryInfo destination)
         {
             if (ImagesList?.Count == 0)
             {
@@ -203,7 +287,7 @@ namespace CSS_Sprite_Image
                 try
                 {
                     destination = Directory.CreateDirectory(path);
-                    DirectoryInfo imageDir = Directory.CreateDirectory(Path.Combine(path, "Assets"));   
+                    DirectoryInfo imageDir = Directory.CreateDirectory(Path.Combine(path, "Assets"));
                     for (int i = 0; i < ImagesList.Count; i++)
                     {
                         try
@@ -221,14 +305,14 @@ namespace CSS_Sprite_Image
 
                     using (StreamWriter imageListFile = new StreamWriter(File.Open(Path.Combine(path, "Images.xml"), FileMode.OpenOrCreate)))
                     {
-                        string xmlImagesFile = GetXmlImagesFile();
+                        string xmlImagesFile = CreateXmlImagesFile();
                         imageListFile.Write(xmlImagesFile);
                         imageListFile.Close();
                     }
 
                     using (StreamWriter projectFile = new StreamWriter(File.Open(Path.Combine(path, ProjectName + ".sip"), FileMode.OpenOrCreate)))
                     {
-                        string xmlProjectFile = GetXmlProjectFile();
+                        string xmlProjectFile = CreateXmlProjectFile();
                         projectFile.Write(xmlProjectFile);
                         projectFile.Close();
                     }
@@ -237,7 +321,7 @@ namespace CSS_Sprite_Image
             }
         }
 
-        internal string GetXmlProjectFile()
+        public string CreateXmlProjectFile()
         {
             XmlDocument document = new XmlDocument();
 
@@ -281,11 +365,11 @@ namespace CSS_Sprite_Image
             mainNode.AppendChild(node);
 
             node = document.CreateNode(XmlNodeType.Element, "organizeMethodId", "");
-            node.InnerText = OrganizeMethod.ToString("d");
+            node.InnerText = OrganizeMethodId.ToString("d");
             mainNode.AppendChild(node);
 
             node = document.CreateNode(XmlNodeType.Element, "organizeMethodName", "");
-            node.InnerText = OrganizeMethod.ToString();
+            node.InnerText = OrganizeMethodId.ToString();
             mainNode.AppendChild(node);
 
             node = document.CreateNode(XmlNodeType.Element, "creatorUser", "");
@@ -305,7 +389,7 @@ namespace CSS_Sprite_Image
             return Functions.BeautifyXml(document.OuterXml);
         }
 
-        internal string GetXmlImagesFile()
+        public string CreateXmlImagesFile()
         {
             XmlDocument document = new XmlDocument();
 
@@ -346,13 +430,51 @@ namespace CSS_Sprite_Image
             return Functions.BeautifyXml(document.OuterXml);
         }
 
-        internal Point GetCanvasDimensions()
+        public static ProjectFile LoadProject(DirectoryInfo source, string projectFilePath)
+        {
+            ProjectFile result = null;
+            if (source is null || !source.Exists)
+            {
+                return result;
+            }
+            DirectoryInfo assetsFolder = new DirectoryInfo(Path.Combine(source.FullName, "Assets"));
+            if (!assetsFolder.Exists)
+            {
+                return result;
+            }
+
+            FileInfo[] imageFiles = assetsFolder.GetFiles();
+            FileInfo projectFile = new FileInfo(projectFilePath);
+
+            if (imageFiles.Length == 0 || !projectFile.Exists)
+            {
+                return result;
+            }
+
+            var serializer = new XmlSerializer(typeof(ProjectFile));
+            using (Stream stream = projectFile.Open(FileMode.Open, FileAccess.Read))
+            {
+                //XmlDocument doc = new XmlDocument();
+                //doc.Load(stream);
+                //XmlReader xmlreader = XmlReader.Create(stream);
+                result = (ProjectFile)serializer.Deserialize(stream);
+                //xmlreader.Close();
+                stream.Close();
+                foreach (ImageItem it in result.ImagesList)
+                {
+                    it.ImagePath = Path.Combine(source.FullName, it.ImagePath);
+                }
+            }
+            return result;
+        }
+
+        public Point GetCanvasDimensions()
         {
             Point result = new Point(0, 0);
             if (ImagesList.Count > 0)
             {
-                var x = ImagesList.Max(it => it.Position.X + it.Width);
-                var y = ImagesList.Max(it => it.Position.Y + it.Height);
+                var x = ImagesList.Max(it => it.PositionX + it.Width);
+                var y = ImagesList.Max(it => it.PositionY + it.Height);
                 result = new Point(x, y);
             }
             return result;

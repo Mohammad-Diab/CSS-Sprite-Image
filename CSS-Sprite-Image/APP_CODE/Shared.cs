@@ -14,7 +14,7 @@ namespace CSS_Sprite_Image
         ZoomOut = 2
     }
 
-    enum OrganizeMethod
+    public enum OrganizeMethod
     {
         EachImageHeightInRow = 1,
         Sequence = 2,

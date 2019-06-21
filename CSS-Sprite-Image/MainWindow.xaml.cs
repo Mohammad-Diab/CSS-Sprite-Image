@@ -88,6 +88,34 @@ namespace CSS_Sprite_Image
             }
         }
 
+        private void LoadProject_Click(object sender, RoutedEventArgs e)
+        {
+            VistaOpenFileDialog vofd = new VistaOpenFileDialog()
+            {
+                Filter = "Sprite Image Project File (*.sip)|*.sip",
+                CheckFileExists = true,
+                CheckPathExists = true,
+                Multiselect = false,
+                Title = "Select a project file to load...",
+            };
+            if (vofd.ShowDialog() == true)
+            {
+                LoadProject(vofd.FileName);
+                foreach (ImageItem it in currentProject?.ImagesList)
+                {
+                    UIElement result = AddImageToCanvas(it);
+                    if (result != null)
+                    {
+                        canvas.Children.Add(result);
+                    }
+                }
+                Point dimensions = GetCanvasDimensions();
+                canvas.Tag = new Point(dimensions.X, dimensions.Y);
+                canvas.Width = (dimensions.X) * canvasScaleFactor.ScaleX;
+                canvas.Height = (dimensions.Y) * canvasScaleFactor.ScaleY;
+            }
+        }
+
         #endregion Events
 
         #region Functions
@@ -112,8 +140,36 @@ namespace CSS_Sprite_Image
                         BorderThickness = new Thickness(2),
                         Child = im
                     };
-                    Canvas.SetLeft(br, newImage.Position.X);
-                    Canvas.SetTop(br, newImage.Position.Y);
+                    Canvas.SetLeft(br, newImage.PositionX);
+                    Canvas.SetTop(br, newImage.PositionY);
+                    return br;
+                }
+            }
+            return null;
+        }
+
+        private Border AddImageToCanvas(ImageItem image)
+        {
+            if (File.Exists(image.ImagePath))
+            {
+                if (image.Added)
+                {
+                    Image im = new Image()
+                    {
+                        Width = image.Width - 4,
+                        Height = image.Height - 4,
+                        Source = new BitmapImage(new Uri(image.ImagePath))
+                    };
+                    Border br = new Border()
+                    {
+                        Width = image.Width,
+                        Height = image.Height,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(2),
+                        Child = im
+                    };
+                    Canvas.SetLeft(br, image.PositionX);
+                    Canvas.SetTop(br, image.PositionY);
                     return br;
                 }
             }
@@ -149,7 +205,7 @@ namespace CSS_Sprite_Image
 
         private Point GetCanvasDimensions()
         {
-            return currentProject.GetCanvasDimensions();
+            return currentProject?.GetCanvasDimensions() ?? new Point(0, 0);
         }
 
         private void SaveProject(string selectedPath)
@@ -168,6 +224,23 @@ namespace CSS_Sprite_Image
                 if (di.Exists)
                 {
                     currentProject.SaveProject(di);
+                }
+            }
+        }
+
+        private void LoadProject(string selectedPath)
+        {
+            if (!string.IsNullOrEmpty(selectedPath))
+            {
+                FileInfo fi = new FileInfo(selectedPath);
+                if (!fi.Exists|| !fi.Directory.Exists)
+                {
+                    return;
+                }
+                currentProject = ProjectFile.LoadProject(fi.Directory, selectedPath);
+                if(currentProject == null)
+                {
+                    return;
                 }
             }
         }
