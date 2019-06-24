@@ -321,6 +321,14 @@ namespace CSS_Sprite_Image
                     }
                 }
                 catch (Exception) { }
+                finally
+                {
+                    foreach(ImageItem item in ImagesList)
+                    {
+                        if (item.ImagePath.IndexOf(path) == -1 && !string.IsNullOrEmpty(item.ImagePath) && item.ImagePath.IndexOf(":") == -1)
+                            item.ImagePath = Path.Combine(path, item.ImagePath.Trim(Path.DirectorySeparatorChar));
+                    }
+                }
             }
         }
 
