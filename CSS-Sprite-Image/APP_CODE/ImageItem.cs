@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -23,16 +25,16 @@ namespace CSS_Sprite_Image
         public string ImageName { get; set; }
 
         [XmlElement("width")]
-        public double Width { get; set; }
+        public float Width { get; set; }
 
         [XmlElement("height")]
-        public double Height { get; set; }
+        public float Height { get; set; }
 
         [XmlElement("positionX")]
-        public double PositionX { get; set; }
+        public float PositionX { get; set; }
 
         [XmlElement("positionY")]
-        public double PositionY { get; set; }
+        public float PositionY { get; set; }
 
         [XmlElement("row")]
         public int Row { get; set; }
@@ -102,7 +104,7 @@ namespace CSS_Sprite_Image
             }
             if (!found)
             {
-                double maxHieght = project.LineHeights.Select(it => it.Height).Sum();
+                float maxHieght = project.LineHeights.Select(it => it.Height).Sum();
                 if (maxHieght + Height <= project.MaxCanvasHeight)
                 {
                     Row = project.LineHeights.Count;
@@ -172,13 +174,13 @@ namespace CSS_Sprite_Image
         public int Id { get; set; }
 
         [XmlElement("height")]
-        public double Height { get; set; }
+        public float Height { get; set; }
 
         public LineHeight()
         {
         }
 
-        internal LineHeight(int id, double height)
+        internal LineHeight(int id, float height)
         {
             Id = id;
             Height = height;
@@ -201,10 +203,10 @@ namespace CSS_Sprite_Image
         public string ProjectName { get; set; }
 
         [XmlElement("maxCanvasWidth")]
-        public double MaxCanvasWidth { get; set; }
+        public int MaxCanvasWidth { get; set; }
 
         [XmlElement("maxCanvasHeight")]
-        public double MaxCanvasHeight { get; set; }
+        public int MaxCanvasHeight { get; set; }
 
         [XmlArray("images")]
         [XmlArrayItem("image")]
@@ -245,7 +247,7 @@ namespace CSS_Sprite_Image
             LineHeights = new List<LineHeight>();
         }
 
-        internal ProjectFile(string name, double maxWidth, double maxHeight, OrganizeMethod organizeMethod, string creator)
+        internal ProjectFile(string name, int maxWidth, int maxHeight, OrganizeMethod organizeMethod, string creator)
         {
             ProjectName = name;
             MaxCanvasWidth = maxWidth;
@@ -255,6 +257,7 @@ namespace CSS_Sprite_Image
             LineHeights = new List<LineHeight>();
             CreatorUser = creator;
             CreatedDate = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
+            Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
         internal void SaveProject(DirectoryInfo destination)
@@ -277,7 +280,7 @@ namespace CSS_Sprite_Image
             {
                 string path = Path.Combine(destination.FullName, ProjectName);
                 int number = 1;
-                while (Directory.Exists(path))
+                while (Directory.Exists(path) || File.Exists(path))
                 {
                     path = Path.Combine(destination.FullName, ProjectName + "_" + number);
                     number++;
@@ -484,5 +487,143 @@ namespace CSS_Sprite_Image
             return result;
         }
 
+        internal bool Export(DirectoryInfo destenation, string classNamePattern, string imagePath, ExportImageFormat_Enum imageFormat)
+        {
+            if(SaveCssFile(destenation, classNamePattern, imagePath, imageFormat.ToString()))
+            {
+                return SaveImageFile(destenation, imageFormat.ToString());
+            }
+            return false;
+        }
+
+        private bool SaveCssFile(DirectoryInfo directory, string classNamePattern, string imagePath, string imageExtention)
+        {
+            if (!directory.Exists)
+            {
+                try
+                {
+                    directory.Create();
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            string fileName = Regex.Replace(ProjectName, "[\\~#%&*{}/:<>?|\"-]", "_");
+            string path = Path.Combine(directory.FullName, fileName) + ".css";
+            int number = 1;
+            while (Directory.Exists(path) || File.Exists(path))
+            {
+                path = Path.Combine(directory.FullName, fileName + "_" + number) + ".css";
+                number++;
+            }
+            imagePath = Functions.ProcessImagePath(imagePath, ProjectName, imageExtention);
+            StringBuilder sb = new StringBuilder();
+
+            foreach (ImageItem item in ImagesList)
+            {
+                sb.AppendLine();
+                sb.AppendLine($".{Functions.ProcessClassName(item, classNamePattern)}{{");
+                sb.AppendLine($"\tbackground: url('{imagePath}') no-repeat;");
+                sb.AppendLine($"\twidth: {item.Width}px;");
+                sb.AppendLine($"\theight: {item.Height}px;");
+                sb.AppendLine($"\tbackground-position: -{item.PositionX}px -{item.PositionY}px;");
+                sb.AppendLine("}");
+            }
+
+            byte[] hashArray = SHA1.Create().ComputeHash(Encoding.Unicode.GetBytes(sb.ToString()));
+            string hash = BitConverter.ToString(hashArray).Replace("-", "");
+
+            sb.Insert(0, $"*/{Environment.NewLine}");
+            sb.Insert(0, $"* {Environment.NewLine}");
+            sb.Insert(0, $"* Copyright © 2019 all right reserved.{Environment.NewLine}");
+            sb.Insert(0, $"* https://www.linkedin.com/in/mohammaddiab0{Environment.NewLine}");
+            sb.Insert(0, $"* kod by Mohammad.{Environment.NewLine}");
+            sb.Insert(0, $"* {Environment.NewLine}");
+            sb.Insert(0, $"* Export date: {DateTime.UtcNow.ToString("ddd MMM dd yyyy hh:mm:ss UTC")}{Environment.NewLine}");
+            sb.Insert(0, $"* File body hash: {hash}{Environment.NewLine}");
+            sb.Insert(0, $"* {Environment.NewLine}");
+            sb.Insert(0, $"* Released under the MIT license.{Environment.NewLine}");
+            sb.Insert(0, $"* Generated by: Sprite Image Maker {Version}{Environment.NewLine}");
+            sb.Insert(0, $"* {Environment.NewLine}");
+            sb.Insert(0, $"/*{Environment.NewLine}");
+
+
+            using (StreamWriter sw = new StreamWriter(File.Open(path, FileMode.OpenOrCreate, FileAccess.Write)))
+            {
+                try
+                {
+                    sw.Write(sb.ToString());
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+                finally
+                {
+                    sw.Close();
+                }
+            }
+
+            return true;
+        }
+
+        private bool SaveImageFile(DirectoryInfo directory, string imageExtention)
+        {
+            if (!directory.Exists)
+            {
+                try
+                {
+                    directory.Create();
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            string fileName = Regex.Replace(ProjectName, "[\\~#%&*{}/:<>?|\"-]", "_");
+            string path = Path.Combine(directory.FullName, fileName) + $".{imageExtention}";
+            int number = 1;
+            while (Directory.Exists(path) || File.Exists(path))
+            {
+                path = Path.Combine(directory.FullName, fileName + "_" + number) + $".{imageExtention}";
+                number++;
+            }
+
+            var ImageBitmap = new System.Drawing.Bitmap(MaxCanvasWidth, MaxCanvasHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            ImageBitmap.MakeTransparent(System.Drawing.Color.Black);
+            using (var graphics = System.Drawing.Graphics.FromImage(ImageBitmap))
+            {
+                foreach (var item in ImagesList)
+                {
+                    try
+                    {
+                        System.Drawing.Image image = new System.Drawing.Bitmap(File.OpenRead(item.ImagePath));
+                        graphics.DrawImage(image, new System.Drawing.RectangleF(new System.Drawing.PointF(item.PositionX, item.PositionY),
+                            new System.Drawing.SizeF(item.Width, item.Height)));
+                    }
+                    catch (Exception) { }
+                }
+            }
+
+            using (Stream stream = File.Open(path, FileMode.OpenOrCreate, FileAccess.Write))
+            {
+                try
+                {
+                    System.Drawing.Imaging.ImageFormat format = Functions.GetImageFormat(imageExtention);
+                    ImageBitmap.Save(stream, format);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+                finally
+                {
+                    stream.Close();
+                }
+            }
+
+            return true;
+        }
     }
 }

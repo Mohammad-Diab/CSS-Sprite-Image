@@ -116,6 +116,12 @@ namespace CSS_Sprite_Image
             }
         }
 
+        private void ExportProject_Click(object sender, RoutedEventArgs e)
+        {
+            ExportProject window = new ExportProject() { project = currentProject };
+            window.ShowDialog();
+        }
+
         #endregion Events
 
         #region Functions
@@ -247,7 +253,5 @@ namespace CSS_Sprite_Image
 
 
         #endregion Functions
-
-
     }
 }

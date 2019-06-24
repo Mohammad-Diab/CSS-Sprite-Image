@@ -1,0 +1,96 @@
+﻿<Window x:Class="CSS_Sprite_Image.ExportProject"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CSS_Sprite_Image"
+        mc:Ignorable="d"
+        Title="Export Project" Width="461" ResizeMode="NoResize" Height="342" FontSize="16" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <ScrollViewer Margin="10,10,10,37" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="2">
+            <StackPanel>
+                <StackPanel Margin="0,0,0,0">
+                    <TextBlock Margin="2,0,0,0" TextWrapping="Wrap" Text="Export Path" VerticalAlignment="Top"/>
+                    <Grid Margin="0,5,0,0">
+                        <TextBox TextWrapping="Wrap" x:Name="exportPath" Text="{}{Desktop}" Margin="0,0,70,0"/>
+                        <Button Width="65" HorizontalAlignment="Right" Content="Browse" Click="BrowseButton_Click"/>
+                    </Grid>
+                </StackPanel>
+                <StackPanel Margin="0,15,0,0">
+                    <TextBlock Margin="2,0,0,0" TextWrapping="Wrap" Text="CSS Class Pattern" VerticalAlignment="Top"/>
+                    <TextBox x:Name="cssClassPattern" MinHeight="25" Margin="0,5,0,0" TextWrapping="Wrap" Text="icon-{imageName}-{imageWidth}" VerticalAlignment="Top"/>
+                </StackPanel>
+                <StackPanel Margin="0,15,0,0">
+                    <TextBlock Margin="2,0,0,0" TextWrapping="Wrap" Text="Image Path in your Project" VerticalAlignment="Top"/>
+                    <TextBox x:Name="location" MinHeight="25" Margin="0,5,0,0" TextWrapping="Wrap" Text="{}{currentImageName}" VerticalAlignment="Top"/>
+                </StackPanel>
+                <StackPanel Margin="0,15,0,0">
+                    <TextBlock Margin="2,0,0,0" TextWrapping="Wrap" Text="Output Image Type" VerticalAlignment="Top"/>
+                    <ComboBox x:Name="type" Margin="0,5,0,0" SelectedIndex="0" Text="new Project" VerticalAlignment="Top">
+                        <ComboBoxItem>
+                            <TextBlock>
+                                <Run Text="PNG ("/>
+                                <Run Foreground="ForestGreen" Text="recommended"/>
+                                <Run Text=")"/>
+                            </TextBlock>
+                            <ComboBoxItem.ToolTip>
+                                <TextBlock>
+                                    <Run Foreground="ForestGreen" Text="Small file size, support transparency."/>
+                                </TextBlock>
+                            </ComboBoxItem.ToolTip>
+                        </ComboBoxItem>
+                        <ComboBoxItem Content="JPEG">
+                            <ComboBoxItem.ToolTip>
+                                <TextBlock>
+                                <Run Foreground="ForestGreen" Text="Small file size "/>
+                                <Run Text="but "/>
+                                <Run Foreground="Tomato" Text="doesn't support transparency."/>
+                                </TextBlock>
+                            </ComboBoxItem.ToolTip>
+                        </ComboBoxItem>
+                        <ComboBoxItem Content="Gif">
+                            <ComboBoxItem.ToolTip>
+                                <TextBlock>
+                                <Run Foreground="ForestGreen" Text="Small file size, support transparency"/>
+                                <Run Foreground="Tomato" TextDecorations="Underline" Text="but"/>
+                                <Run Text="it just has 256 colors."/>
+                                </TextBlock>
+                            </ComboBoxItem.ToolTip>
+                        </ComboBoxItem>
+                        <ComboBoxItem>
+                            <TextBlock>
+                            <Run Text="Webp ("/>
+                            <Run Foreground="Tomato" Text="not recommended"/>
+                            <Run Text=")"/>
+                            </TextBlock>
+                            <ComboBoxItem.ToolTip>
+                                <TextBlock>
+                                <Run Foreground="ForestGreen" Text="Small file size, support transparency "/>
+                                <Run Foreground="Tomato" Text="but" TextDecorations="Underline"/>
+                                <Run Text=" Only the most recent browsers can view this image type."/>
+                                </TextBlock>
+                            </ComboBoxItem.ToolTip>
+                        </ComboBoxItem>
+                        <ComboBoxItem>
+                            <TextBlock>
+                            <Run Text="Bmp ("/>
+                            <Run Foreground="Tomato" Text="not recommended"/>
+                            <Run Text=")"/>
+                            </TextBlock>
+                            <ComboBoxItem.ToolTip>
+                                <TextBlock>
+                                <Run Foreground="Tomato" Text="Large file size, doesn't support transparency."/>
+                                </TextBlock>
+                            </ComboBoxItem.ToolTip>
+                        </ComboBoxItem>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Margin="10,0,10,10" VerticalAlignment="Bottom" Grid.ColumnSpan="2">
+            <Button Content="Export" HorizontalAlignment="Right" Width="90" Background="#00DDDDDD" BorderBrush="RoyalBlue" Foreground="RoyalBlue" Click="ExportButton_Click"/>
+            <Button Content="Cancel" HorizontalAlignment="Left" Width="90" BorderBrush="DimGray" Foreground="DimGray" Background="#00DDDDDD" Click="CloseButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>
